@@ -23,18 +23,20 @@ class Main(tk.Frame):
         btn_open_dialog.pack(side=tk.LEFT)
 
         self.tree = ttk.Treeview(
-            self, columns=("ID", "name", "tel", "email"), height=45, show="headings"
+            self, columns=("ID", "name", "tel", "email", "salary"), height=45, show="headings"
         )
         #создаем таблицу с данными
         self.tree.column("ID", width=30, anchor=tk.CENTER)
         self.tree.column("name", width=300, anchor=tk.CENTER)
         self.tree.column("tel", width=150, anchor=tk.CENTER)
         self.tree.column("email", width=150, anchor=tk.CENTER)
+        self.tree.column("salary", width = 150, anchor = tk.CENTER)
 
         self.tree.heading("ID", text="ID")
         self.tree.heading("name", text="ФИО")
         self.tree.heading("tel", text="Телефон")
         self.tree.heading("email", text="E-mail")
+        self.tree.heading("salary", text = "Зарплата")
 
         self.tree.pack(side=tk.LEFT)
 
@@ -78,7 +80,7 @@ class Main(tk.Frame):
             bg="#d7d8e0",
             bd=0,
             image=self.refresh_img,
-            command=self.open_search_dialog,
+            command=self.view_records,
         )
         btn_refresh.pack(side=tk.LEFT)
     
@@ -87,8 +89,8 @@ class Main(tk.Frame):
         Child()
 
     #сохраняем данные в бд
-    def records(self, name, tel, email):
-        self.db.insert_data(name, tel, email)
+    def records(self, name, tel, email, salary):
+        self.db.insert_data(name, tel, email, salary)  # Передаем зарплату
         self.view_records()
 
     #обновление данных
@@ -102,10 +104,10 @@ class Main(tk.Frame):
         Update()
 
     #изменяем данные
-    def update_records(self, name, tel, email):
+    def update_records(self, name, tel, email, salary):
         self.db.cursor.execute(
-            """UPDATE db SET name=?, tel=?, email=? WHERE id=?""",
-            (name, tel, email, self.tree.set(self.tree.selection()[0], "#1")),
+            """UPDATE db SET name=?, tel=?, email=?, salary=? WHERE id=?""",
+            (name, tel, email, salary, self.tree.set(self.tree.selection()[0], "#1")),
         )
         self.db.conn.commit()
         self.view_records()
@@ -155,8 +157,13 @@ class Child(tk.Toplevel):
         label_select.place(x=50, y=80)
         label_sum = tk.Label(self, text="E-mail:")
         label_sum.place(x=50, y=110)
-
+        label_salary = tk.Label(self, text="Зарплата:")
+        label_salary.place(x=50, y=140)
+        
         #расположение строк
+        self.entry_salary = ttk.Entry(self)
+        self.entry_salary.place(x=200, y=140)
+
         self.entry_name = ttk.Entry(self)
         self.entry_name.place(x=200, y=50)
         self.entry_email = ttk.Entry(self)
@@ -176,7 +183,7 @@ class Child(tk.Toplevel):
         self.btn_ok.bind(
             "<Button-1>",
             lambda event: self.view.records(
-                self.entry_name.get(), self.entry_email.get(), self.entry_tel.get()
+                self.entry_name.get(), self.entry_email.get(), self.entry_tel.get(), self.entry_salary.get()  # Получаем зарплату и тд.
             ),
         )
 
@@ -197,7 +204,7 @@ class Update(Child):#наследуем все от класса Child
         btn_edit.bind(
             "<Button-1>",
             lambda event: self.view.update_records(
-                self.entry_name.get(), self.entry_email.get(), self.entry_tel.get()
+                self.entry_name.get(), self.entry_email.get(), self.entry_tel.get(), self.entry_salary.get()  # Получаем зарплату
             ),
         )
         btn_edit.bind("<Button-1>", lambda event: self.destroy(), add="+")
@@ -213,7 +220,7 @@ class Update(Child):#наследуем все от класса Child
         self.entry_name.insert(0, row[1])
         self.entry_email.insert(0, row[2])
         self.entry_tel.insert(0, row[3])
-
+        self.entry_salary.insert(0, row[4])
 
 class Search(tk.Toplevel):
     def __init__(self):
@@ -257,15 +264,16 @@ class DB:#создаем баззу данных
                 id INTEGER PRIMARY KEY,
                 name TEXT,
                 tel TEXT,
-                email TEXT
+                email TEXT,
+                salary TEXT
             )"""
         )
         self.conn.commit()
 
     #создаем функцию для добавления данных в базу данных
-    def insert_data(self, name, tel, email):
+    def insert_data(self, name, tel, email, salary):
         self.cursor.execute(
-            """INSERT INTO db(name, tel, email) VALUES(?, ?, ?)""", (name, tel, email)
+            """INSERT INTO db(name, tel, email, salary) VALUES(?, ?, ?, ?)""", (name, tel, email, salary)
         )
         self.conn.commit()
 
@@ -276,6 +284,6 @@ if __name__ == "__main__":
     app = Main(root)
     app.pack()
     root.title("Телефонная книга")
-    root.geometry("665x450")
+    root.geometry("875x665")
     root.resizable(False, False)
     root.mainloop()#запускаем
